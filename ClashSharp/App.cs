@@ -71,7 +71,7 @@ namespace ClashSharp
             catch (Exception e)
             {
                 logger.LogError(e, "Start Clash failed.");
-                MessageBox.Show("Start Clash failed.");
+                MessageBox.Show("Start Clash failed.\n" + e.Message);
                 ExitApp();
             }
         }

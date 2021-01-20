@@ -14,6 +14,8 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
+    <PackageReference Include="System.CommandLine.Hosting" Version="0.3.0-alpha.20574.7" />
+    <PackageReference Include="TaskScheduler" Version="2.9.0" />
   </ItemGroup>
 
 </Project>
