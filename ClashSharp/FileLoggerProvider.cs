@@ -17,12 +17,9 @@ namespace ClashSharp
         {
             FileName = fileName;
 
-            file = new Lazy<StreamWriter>(() =>
+            file = new Lazy<StreamWriter>(() => new StreamWriter(fileName)
             {
-                return new StreamWriter(fileName)
-                {
-                    AutoFlush = true
-                };
+                AutoFlush = true
             });
         }
 
@@ -31,7 +28,7 @@ namespace ClashSharp
             return new FileLogger(this, categoryName);
         }
 
-        public StreamWriter GetStream()
+        private StreamWriter GetStream()
         {
             return file.Value;
         }

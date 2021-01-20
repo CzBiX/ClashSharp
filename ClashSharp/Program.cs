@@ -18,7 +18,7 @@ namespace ClashSharp
     {
         static CommandLineBuilder BuildCommand()
         {
-            RootCommand rootCommand = new RootCommand()
+            RootCommand rootCommand = new()
             {
                 Handler = CommandHandler.Create<IHost>(RunApp),
             };
@@ -99,10 +99,10 @@ namespace ClashSharp
             builder.ConfigureServices(services =>
             {
                 services.AddScoped<ClashApi>();
-                services.AddSingleton(services =>
+                services.AddSingleton(serviceProvider =>
                 {
-                    var logger = services.GetRequiredService<ILogger<Clash>>();
-                    var api = new Lazy<ClashApi>(() => services.GetRequiredService<ClashApi>());
+                    var logger = serviceProvider.GetRequiredService<ILogger<Clash>>();
+                    var api = new Lazy<ClashApi>(serviceProvider.GetRequiredService<ClashApi>);
                     return new Clash(logger, api, "clash-windows-amd64.exe", "clash-home", true);
                 });
                 services.AddSingleton<App>();

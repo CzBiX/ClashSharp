@@ -60,7 +60,7 @@ namespace ClashSharp
             taskWatcherToken = new CancellationTokenSource();
             Task.Run(async () =>
             {
-                while (t != null && !taskWatcherToken.IsCancellationRequested)
+                while (!taskWatcherToken.IsCancellationRequested)
                 {
                     if (t.State != Microsoft.Win32.TaskScheduler.TaskState.Running)
                     {
@@ -147,10 +147,7 @@ namespace ClashSharp
 
         public void WaitForExit()
         {
-            if (process != null)
-            {
-                process.WaitForExit();
-            }
+            process?.WaitForExit();
         }
     }
 }

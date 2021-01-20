@@ -10,7 +10,8 @@ namespace ClashSharp
 {
     public class TaskHelper
     {
-        private static readonly string TaskPath = "ClashSharp Task";
+        private const string TaskPath = "ClashSharp Task";
+
         public static void InstallTask(string exePath, string arguments)
         {
             var taskService = TaskService.Instance;
