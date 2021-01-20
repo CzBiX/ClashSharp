@@ -109,7 +109,6 @@ namespace ClashSharp
             if (process != null)
             {
                 process.Kill();
-                process.WaitForExit();
                 process.Close();
                 process = null;
             }
