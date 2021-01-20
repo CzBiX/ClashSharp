@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows.Forms;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -34,6 +35,7 @@ namespace ClashSharp
 
 
             var builder = new CommandLineBuilder(rootCommand);
+            builder.AddGlobalOption(Options.WorkingDirectory);
 
             return builder;
         }
@@ -46,6 +48,14 @@ namespace ClashSharp
         {
             var cmd = BuildCommand();
             cmd.UseHost(BuildHost);
+            cmd.UseMiddleware(invocation =>
+            {
+                var dir = invocation.ParseResult.ValueForOption(Options.WorkingDirectory);
+                if (dir != null)
+                {
+                    Directory.SetCurrentDirectory(dir);
+                }
+            });
 
             return cmd.Build().Invoke(args);
         }
@@ -82,6 +92,10 @@ namespace ClashSharp
         private static IHostBuilder BuildHost(string[] args)
         {
             var builder = Host.CreateDefaultBuilder(args);
+            builder.ConfigureLogging(logger =>
+            {
+                logger.AddProvider(new FileLoggerProvider("clash.log"));
+            });
             builder.ConfigureServices(services =>
             {
                 services.AddScoped<ClashApi>();

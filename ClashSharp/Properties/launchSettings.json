@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "ClashSharp": {
-      "commandName": "Project",
-      "workingDirectory": "C:\\Apps\\Clash"
-    }
-  }
-}
