@@ -10,14 +10,14 @@ namespace ClashSharp
 {
     class FileLoggerProvider : ILoggerProvider
     {
-        public string FileName;
+        public string FilePath;
         private readonly Lazy<StreamWriter> file;
 
-        public FileLoggerProvider(string fileName)
+        public FileLoggerProvider(string filePath)
         {
-            FileName = fileName;
+            FilePath = filePath;
 
-            file = new Lazy<StreamWriter>(() => new StreamWriter(fileName)
+            file = new Lazy<StreamWriter>(() => new StreamWriter(filePath)
             {
                 AutoFlush = true
             });
