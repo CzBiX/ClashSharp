@@ -25,6 +25,8 @@ namespace ClashSharp
 
         public event EventHandler? Exited;
 
+        public class TaskMissingException : Exception { };
+
         public Clash(ILogger<Clash> logger, Lazy<ClashApi> api, string exePath, string homePath, bool needAdmin)
         {
             this.logger = logger;
@@ -43,7 +45,12 @@ namespace ClashSharp
         private void StartTask()
         {
             var t = TaskHelper.GetTask();
-            if (t == null || t.State != Microsoft.Win32.TaskScheduler.TaskState.Ready)
+            if (t == null)
+            {
+                throw new TaskMissingException();
+            }
+
+            if (t.State != Microsoft.Win32.TaskScheduler.TaskState.Ready)
             {
                 throw new Exception("Invalid task status.");
             }

@@ -61,12 +61,48 @@ namespace ClashSharp
             return icon;
         }
 
+        private static void InstallClashTask()
+        {
+            var info = new ProcessStartInfo(Application.ExecutablePath, "install-task")
+            {
+                Verb = "runas",
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+            };
+
+            using var p = new Process()
+            {
+                EnableRaisingEvents = true,
+                StartInfo = info,
+            };
+
+            p.Start();
+            p.WaitForExit();
+        }
+
         private void StartClash()
         {
+            retry:
             try
             {
                 clash.Start();
                 clash.Exited += Clash_Exited;
+            }
+            catch (Clash.TaskMissingException e)
+            {
+                logger.LogInformation(e, "Clash task not installed.");
+                try
+                {
+                    InstallClashTask();
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Install Clash task failed.");
+                    ExitApp();
+                    return;
+                }
+
+                goto retry;
             }
             catch (Exception e)
             {
