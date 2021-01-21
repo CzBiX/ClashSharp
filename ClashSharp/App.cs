@@ -51,7 +51,7 @@ namespace ClashSharp
             var icon = new NotifyIcon()
             {
                 Icon = SystemIcons.Application,
-                Text = "Clash",
+                Text = "ClashSharp",
                 ContextMenuStrip = menu,
                 Visible = true,
             };

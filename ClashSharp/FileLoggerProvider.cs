@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.CommandLine.Parsing;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ClashSharp.Cmd;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -14,12 +17,19 @@ namespace ClashSharp
         public readonly string FilePath;
         private readonly Lazy<StreamWriter> file;
 
-        public FileLoggerProvider(IOptions<FileLoggerOptions> options)
+        public FileLoggerProvider(
+            IOptions<FileLoggerOptions> options,
+            IHostEnvironment environment,
+            ParseResult parseResult
+            )
         {
             var optionsValue = options.Value;
-            FilePath = optionsValue.FilePath!;
+            var isDaemon = parseResult.CommandResult.Command is RunClashCmd;
+            var appName = environment.ApplicationName ?? "app";
+            var fileName = (isDaemon ? appName + "-daemon" : appName) + ".log";
+            FilePath = Path.Join(optionsValue.Path?.FullName, fileName);
 
-            file = new Lazy<StreamWriter>(() => new StreamWriter(FilePath)
+            file = new Lazy<StreamWriter>(() => new StreamWriter(FilePath, true)
             {
                 AutoFlush = true
             });
@@ -45,7 +55,7 @@ namespace ClashSharp
 
         public record FileLoggerOptions
         {
-            public string? FilePath;
+            public DirectoryInfo? Path;
         }
 
         private class FileLogger : ILogger
@@ -72,7 +82,8 @@ namespace ClashSharp
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
                 var msg = formatter.Invoke(state, exception);
-                var line = $"[{logLevel}][{eventId.Name}] {msg}";
+                var now = DateTime.Now;
+                var line = $"[{now}][{logLevel}][{eventId.Name}] {msg}";
                 Provider.GetStream().WriteLine(line);
             }
         }

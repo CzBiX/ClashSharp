@@ -1,38 +1,25 @@
 using System;
+using System.CommandLine;
+using System.CommandLine.Builder;
+using System.CommandLine.Hosting;
+using System.CommandLine.Parsing;
 using System.IO;
-using System.Windows.Forms;
+using ClashSharp.Cmd;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.DependencyInjection;
-using System.CommandLine;
-using System.CommandLine.Hosting;
-using System.CommandLine.Invocation;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
-
-using ClashSharp.UI;
 
 namespace ClashSharp
 {
-    static class Program
+    internal static class Program
     {
-        static CommandLineBuilder BuildCommand()
+        private static CommandLineBuilder BuildCommand()
         {
-            RootCommand rootCommand = new()
+            RootCommand rootCommand = new MainCmd()
             {
-                Handler = CommandHandler.Create<IHost>(RunApp),
+                new InstallTaskCmd(),
+                new RunClashCmd(),
             };
-
-            rootCommand.AddCommand(new Command("install-task")
-            {
-                Handler = CommandHandler.Create(InstallTask),
-            });
-
-            rootCommand.AddCommand(new Command("run-clash")
-            {
-                Handler = CommandHandler.Create<IHost>(RunClash),
-            });
-
 
             var builder = new CommandLineBuilder(rootCommand);
             builder.AddGlobalOption(Options.WorkingDirectory);
@@ -44,7 +31,7 @@ namespace ClashSharp
         ///  The main entry point for the application.
         /// </summary>
         [STAThread]
-        static int Main(string[] args)
+        public static int Main(string[] args)
         {
             var cmd = BuildCommand();
             cmd.UseDefaults();
@@ -61,47 +48,13 @@ namespace ClashSharp
             return cmd.Build().Invoke(args);
         }
 
-        private static void InstallTask()
-        {
-            TaskHelper.InstallTask(Application.ExecutablePath, "run-clash");
-        }
-
-        private static void RunClash(IHost host)
-        {
-            var clash = host.Services.GetRequiredService<Clash>();
-            var form = new HideForm();
-            Application.ThreadExit += (_, _) => clash.Stop();
-            clash.Exited += (_, _) => form.Close();
-
-            clash.Start(true);
-
-            // HACK: for receive Exit event
-            Application.Run(form);
-        }
-
-        private static void RunApp(IHost host)
-        {
-            Application.SetHighDpiMode(HighDpiMode.SystemAware);
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-
-            var app = host.Services.GetRequiredService<App>();
-
-            Application.Run(app);
-        }
-
         private static IHostBuilder BuildHost(string[] args)
         {
             var builder = Host.CreateDefaultBuilder(args);
-            builder.ConfigureServices((context, services) =>
+            builder.ConfigureServices(services =>
             {
                 services.AddOptions<FileLoggerProvider.FileLoggerOptions>()
-                    .BindConfiguration("FileLogger")
-                    .PostConfigure(options =>
-                    {
-                        var name = context.HostingEnvironment.ApplicationName;
-                        options.FilePath ??= (name ?? "app") + ".log";
-                    });
+                    .BindConfiguration("FileLogger");
                 services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
 
                 services.AddScoped<ClashApi>();
