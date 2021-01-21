@@ -5,19 +5,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ClashSharp
 {
     class FileLoggerProvider : ILoggerProvider
     {
-        public string FilePath;
+        public readonly string FilePath;
         private readonly Lazy<StreamWriter> file;
 
-        public FileLoggerProvider(string filePath)
+        public FileLoggerProvider(IOptions<FileLoggerOptions> options)
         {
-            FilePath = filePath;
+            var optionsValue = options.Value;
+            FilePath = optionsValue.FilePath!;
 
-            file = new Lazy<StreamWriter>(() => new StreamWriter(filePath)
+            file = new Lazy<StreamWriter>(() => new StreamWriter(FilePath)
             {
                 AutoFlush = true
             });
@@ -39,6 +41,11 @@ namespace ClashSharp
             {
                 file.Value.Close();
             }
+        }
+
+        public record FileLoggerOptions
+        {
+            public string? FilePath;
         }
 
         private class FileLogger : ILogger

@@ -9,6 +9,6 @@ namespace ClashSharp
 {
     static class Options
     {
-        public static readonly Option<string?> WorkingDirectory = new Option<string?>("--cd", "Set working directory");
+        public static readonly Option<string?> WorkingDirectory = new(new string[]{ "-d", "--cd" }, "Change working directory");
     }
 }

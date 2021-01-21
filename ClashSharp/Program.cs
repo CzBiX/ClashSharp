@@ -47,7 +47,7 @@ namespace ClashSharp
         static int Main(string[] args)
         {
             var cmd = BuildCommand();
-            cmd.UseHost(BuildHost);
+            cmd.UseDefaults();
             cmd.UseMiddleware(invocation =>
             {
                 var dir = invocation.ParseResult.ValueForOption(Options.WorkingDirectory);
@@ -56,6 +56,7 @@ namespace ClashSharp
                     Directory.SetCurrentDirectory(dir);
                 }
             });
+            cmd.UseHost(BuildHost);
 
             return cmd.Build().Invoke(args);
         }
@@ -92,12 +93,17 @@ namespace ClashSharp
         private static IHostBuilder BuildHost(string[] args)
         {
             var builder = Host.CreateDefaultBuilder(args);
-            builder.ConfigureLogging(logger =>
+            builder.ConfigureServices((context, services) =>
             {
-                logger.AddProvider(new FileLoggerProvider("clash.log"));
-            });
-            builder.ConfigureServices(services =>
-            {
+                services.AddOptions<FileLoggerProvider.FileLoggerOptions>()
+                    .BindConfiguration("FileLogger")
+                    .PostConfigure(options =>
+                    {
+                        var name = context.HostingEnvironment.ApplicationName;
+                        options.FilePath ??= (name ?? "app") + ".log";
+                    });
+                services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
+
                 services.AddScoped<ClashApi>();
                 services.AddSingleton(serviceProvider =>
                 {
