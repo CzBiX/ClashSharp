@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 
 namespace ClashSharp
 {
+    [ProviderAlias("File")]
     class FileLoggerProvider : ILoggerProvider
     {
         public readonly string FilePath;
@@ -55,7 +56,7 @@ namespace ClashSharp
 
         public record FileLoggerOptions
         {
-            public DirectoryInfo? Path;
+            public DirectoryInfo? Path { get; set; }
         }
 
         private class FileLogger : ILogger
@@ -81,6 +82,11 @@ namespace ClashSharp
 
             public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
             {
+                if (!IsEnabled(logLevel))
+                {
+                    return;
+                }
+
                 var msg = formatter.Invoke(state, exception);
                 var now = DateTime.Now;
                 var line = $"[{now}][{logLevel}][{eventId.Name}] {msg}";

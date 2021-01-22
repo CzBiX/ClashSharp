@@ -1,12 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Security;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.Win32.TaskScheduler;
+using Task = System.Threading.Tasks.Task;
 
 namespace ClashSharp
 {
@@ -19,27 +19,23 @@ namespace ClashSharp
         private Microsoft.Win32.TaskScheduler.Task? task;
         private CancellationTokenSource? taskWatcherToken;
 
-        private readonly string exePath;
-        private readonly string homePath;
-        public readonly bool NeedAdmin;
+        private readonly ClashOptions _options;
 
         public event EventHandler? Exited;
 
         public class TaskMissingException : Exception { };
 
-        public Clash(ILogger<Clash> logger, Lazy<ClashApi> api, string exePath, string homePath, bool needAdmin)
+        public Clash(ILogger<Clash> logger, Lazy<ClashApi> api, IOptions<ClashOptions> options)
         {
             this.logger = logger;
             this.api = api;
 
-            this.exePath = exePath;
-            this.homePath = homePath;
-            NeedAdmin = needAdmin;
+            _options = options.Value;
         }
 
         private string BuildArguments()
         {
-            return $"-d {homePath}";
+            return $"-d {_options.HomePath}";
         }
 
         private void StartTask()
@@ -50,7 +46,7 @@ namespace ClashSharp
                 throw new TaskMissingException();
             }
 
-            if (t.State != Microsoft.Win32.TaskScheduler.TaskState.Ready)
+            if (t.State != TaskState.Ready)
             {
                 throw new Exception("Invalid task status.");
             }
@@ -62,7 +58,7 @@ namespace ClashSharp
             {
                 while (!taskWatcherToken.IsCancellationRequested)
                 {
-                    if (t.State != Microsoft.Win32.TaskScheduler.TaskState.Running)
+                    if (t.State != TaskState.Running)
                     {
                         Exited?.Invoke(null, new EventArgs());
                         return;
@@ -74,11 +70,13 @@ namespace ClashSharp
             task = t;
         }
 
+        public bool NeedAdmin => _options.EnableTun;
+
         private void StartProcess()
         {
-            var info = new ProcessStartInfo(exePath, BuildArguments())
+            var info = new ProcessStartInfo(_options.ExePath, BuildArguments())
             {
-                CreateNoWindow = true,
+                CreateNoWindow = !_options.ShowConsole,
             };
 
             var p = new Process()
@@ -147,6 +145,15 @@ namespace ClashSharp
         public void WaitForExit()
         {
             process?.WaitForExit();
+        }
+
+        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+        public record ClashOptions
+        {
+            public string ExePath { get; set; } = "clash-windows-amd64.exe";
+            public string HomePath { get; set; } = "clash-home";
+            public bool EnableTun { get; set; } = false;
+            public bool ShowConsole { get; set; }
         }
     }
 }

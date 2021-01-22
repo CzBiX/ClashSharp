@@ -53,21 +53,22 @@ namespace ClashSharp
             var builder = Host.CreateDefaultBuilder(args);
             builder.ConfigureServices(services =>
             {
-                services.AddOptions<FileLoggerProvider.FileLoggerOptions>()
-                    .BindConfiguration("FileLogger");
+                services.AddTransient(typeof(Lazy<>), typeof(Lazier<>));
                 services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
 
+                services.AddAppOptions();
+
                 services.AddScoped<ClashApi>();
-                services.AddSingleton(serviceProvider =>
-                {
-                    var logger = serviceProvider.GetRequiredService<ILogger<Clash>>();
-                    var api = new Lazy<ClashApi>(serviceProvider.GetRequiredService<ClashApi>);
-                    return new Clash(logger, api, "clash-windows-amd64.exe", "clash-home", true);
-                });
+                services.AddSingleton<Clash>();
                 services.AddSingleton<App>();
             });
 
             return builder;
+        }
+
+        private class Lazier<T> : Lazy<T> where T : class
+        {
+            public Lazier(IServiceProvider provider) : base(provider.GetRequiredService<T>) {}
         }
     }
 }
