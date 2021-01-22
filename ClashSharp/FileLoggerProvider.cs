@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.CommandLine.Parsing;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using ClashSharp.Cmd;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -28,11 +25,30 @@ namespace ClashSharp
             var isDaemon = parseResult.CommandResult.Command is RunClashCmd;
             var appName = environment.ApplicationName ?? "app";
             var fileName = (isDaemon ? appName + "-daemon" : appName) + ".log";
-            FilePath = Path.Join(optionsValue.Path?.FullName, fileName);
+            FilePath = Path.Join(optionsValue.Path, fileName);
 
-            file = new Lazy<StreamWriter>(() => new StreamWriter(FilePath, true)
+            file = new Lazy<StreamWriter>(() =>
             {
-                AutoFlush = true
+                var dirCreated = false;
+                openFile:
+                try
+                {
+                    return new StreamWriter(FilePath, true)
+                    {
+                        AutoFlush = true
+                    };
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    if (dirCreated)
+                    {
+                        throw ;
+                    }
+
+                    Directory.CreateDirectory(optionsValue.Path);
+                    dirCreated = true;
+                    goto openFile;
+                }
             });
         }
 
@@ -54,9 +70,10 @@ namespace ClashSharp
             }
         }
 
+        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
         public record FileLoggerOptions
         {
-            public DirectoryInfo? Path { get; set; }
+            public string Path { get; set; } = "logs";
         }
 
         private class FileLogger : ILogger
@@ -66,8 +83,8 @@ namespace ClashSharp
 
             public FileLogger(FileLoggerProvider provider, string categoryName)
             {
-                this.Provider = provider;
-                this.CategoryName = categoryName;
+                Provider = provider;
+                CategoryName = categoryName;
             }
 
             public IDisposable BeginScope<TState>(TState state)
@@ -88,9 +105,18 @@ namespace ClashSharp
                 }
 
                 var msg = formatter.Invoke(state, exception);
-                var now = DateTime.Now;
-                var line = $"[{now}][{logLevel}][{eventId.Name}] {msg}";
+                var time = DateTime.Now;
+                var levelChar = GetLevelChar(logLevel);
+                var eventLabel = string.IsNullOrEmpty(eventId.Name)
+                    ? eventId.Id.ToString()
+                    : $"{eventId.Id}:{eventId.Name}";
+                var line = $"[{time}][{levelChar}][{CategoryName}][{eventLabel}] {msg}";
                 Provider.GetStream().WriteLine(line);
+            }
+
+            private static char GetLevelChar(LogLevel logLevel)
+            {
+                return logLevel.ToString()[0];
             }
         }
     }
