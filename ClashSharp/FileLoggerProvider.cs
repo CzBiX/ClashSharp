@@ -54,12 +54,7 @@ namespace ClashSharp
 
         public ILogger CreateLogger(string categoryName)
         {
-            return new FileLogger(this, categoryName);
-        }
-
-        private StreamWriter GetStream()
-        {
-            return file.Value;
+            return new FileLogger(this, categoryName, file);
         }
 
         public void Dispose()
@@ -69,55 +64,59 @@ namespace ClashSharp
                 file.Value.Close();
             }
         }
+    }
 
-        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
-        public record FileLoggerOptions
+    class FileLogger : ILogger
+    {
+        public readonly FileLoggerProvider Provider;
+        public readonly string CategoryName;
+
+        private readonly Lazy<StreamWriter> _writer;
+
+        public FileLogger(FileLoggerProvider provider, string categoryName, Lazy<StreamWriter> writer)
         {
-            public string Path { get; set; } = "logs";
+            Provider = provider;
+            CategoryName = categoryName;
+
+            _writer = writer;
         }
 
-        private class FileLogger : ILogger
+        public IDisposable BeginScope<TState>(TState state)
         {
-            public readonly FileLoggerProvider Provider;
-            public readonly string CategoryName;
-
-            public FileLogger(FileLoggerProvider provider, string categoryName)
-            {
-                Provider = provider;
-                CategoryName = categoryName;
-            }
-
-            public IDisposable BeginScope<TState>(TState state)
-            {
-                throw new NotImplementedException();
-            }
-
-            public bool IsEnabled(LogLevel logLevel)
-            {
-                return true;
-            }
-
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
-            {
-                if (!IsEnabled(logLevel))
-                {
-                    return;
-                }
-
-                var msg = formatter.Invoke(state, exception);
-                var time = DateTime.Now;
-                var levelChar = GetLevelChar(logLevel);
-                var eventLabel = string.IsNullOrEmpty(eventId.Name)
-                    ? eventId.Id.ToString()
-                    : $"{eventId.Id}:{eventId.Name}";
-                var line = $"[{time}][{levelChar}][{CategoryName}][{eventLabel}] {msg}";
-                Provider.GetStream().WriteLine(line);
-            }
-
-            private static char GetLevelChar(LogLevel logLevel)
-            {
-                return logLevel.ToString()[0];
-            }
+            throw new NotImplementedException();
         }
+
+        public bool IsEnabled(LogLevel logLevel)
+        {
+            return true;
+        }
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        {
+            if (!IsEnabled(logLevel))
+            {
+                return;
+            }
+
+            var msg = formatter.Invoke(state, exception);
+            var time = DateTime.Now;
+            var levelChar = GetLevelChar(logLevel);
+            var eventLabel = string.IsNullOrEmpty(eventId.Name)
+                ? eventId.Id.ToString()
+                : $"{eventId.Id}:{eventId.Name}";
+            var line = $"[{time}][{levelChar}][{CategoryName}][{eventLabel}] {msg}";
+            _writer.Value.WriteLine(line);
+        }
+
+        private static char GetLevelChar(LogLevel logLevel)
+        {
+            return logLevel.ToString()[0];
+        }
+    }
+
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    record FileLoggerOptions
+    {
+        public string Path { get; set; } = "logs";
     }
 }

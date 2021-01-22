@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Diagnostics;
+using ClashSharp.Core;
 using Microsoft.Extensions.Logging;
 
 namespace ClashSharp
@@ -61,25 +58,6 @@ namespace ClashSharp
             return icon;
         }
 
-        private static void InstallClashTask()
-        {
-            var info = new ProcessStartInfo(Application.ExecutablePath, "install-task")
-            {
-                Verb = "runas",
-                UseShellExecute = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-            };
-
-            using var p = new Process()
-            {
-                EnableRaisingEvents = true,
-                StartInfo = info,
-            };
-
-            p.Start();
-            p.WaitForExit();
-        }
-
         private void StartClash()
         {
             retry:
@@ -93,7 +71,7 @@ namespace ClashSharp
                 logger.LogInformation(e, "Clash task not installed.");
                 try
                 {
-                    InstallClashTask();
+                    Clash.InstallClashTask();
                 }
                 catch (Exception ex)
                 {

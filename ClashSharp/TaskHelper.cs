@@ -8,7 +8,7 @@ using Microsoft.Win32.TaskScheduler;
 
 namespace ClashSharp
 {
-    public class TaskHelper
+    public static class TaskHelper
     {
         private const string TaskPath = "ClashSharp Task";
 

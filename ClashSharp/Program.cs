@@ -5,13 +5,14 @@ using System.CommandLine.Hosting;
 using System.CommandLine.Parsing;
 using System.IO;
 using ClashSharp.Cmd;
+using ClashSharp.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace ClashSharp
 {
-    internal static class Program
+    static class Program
     {
         private static CommandLineBuilder BuildCommand()
         {

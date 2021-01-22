@@ -3,12 +3,14 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using ClashSharp.Cmd;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Win32.TaskScheduler;
 using Task = System.Threading.Tasks.Task;
 
-namespace ClashSharp
+namespace ClashSharp.Core
 {
     class Clash
     {
@@ -23,7 +25,7 @@ namespace ClashSharp
 
         public event EventHandler? Exited;
 
-        public class TaskMissingException : Exception { };
+        public class TaskMissingException : Exception { }
 
         public Clash(ILogger<Clash> logger, Lazy<ClashApi> api, IOptions<ClashOptions> options)
         {
@@ -147,13 +149,32 @@ namespace ClashSharp
             process?.WaitForExit();
         }
 
-        [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
-        public record ClashOptions
+        public static void InstallClashTask()
         {
-            public string ExePath { get; set; } = "clash-windows-amd64.exe";
-            public string HomePath { get; set; } = "clash-home";
-            public bool EnableTun { get; set; } = false;
-            public bool ShowConsole { get; set; }
+            var info = new ProcessStartInfo(Application.ExecutablePath, InstallTaskCmd.Name)
+            {
+                Verb = "runas",
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+            };
+
+            using var p = new Process()
+            {
+                EnableRaisingEvents = true,
+                StartInfo = info,
+            };
+
+            p.Start();
+            p.WaitForExit();
         }
+    }
+
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
+    record ClashOptions
+    {
+        public string ExePath { get; set; } = "clash-windows-amd64.exe";
+        public string HomePath { get; set; } = "clash-home";
+        public bool EnableTun { get; set; } = false;
+        public bool ShowConsole { get; set; }
     }
 }

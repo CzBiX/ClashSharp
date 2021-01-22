@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Windows.Forms;
+using ClashSharp.Core;
 using ClashSharp.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,7 +10,9 @@ namespace ClashSharp.Cmd
 {
     public class RunClashCmd : Command
     {
-        public RunClashCmd() : base("run-clash")
+        public new const string Name = "run-clash";
+
+        public RunClashCmd() : base(Name)
         {
             Handler = CommandHandler.Create<IHost>(Run);
         }

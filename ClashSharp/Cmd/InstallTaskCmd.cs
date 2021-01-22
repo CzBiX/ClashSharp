@@ -6,14 +6,16 @@ namespace ClashSharp.Cmd
 {
     public class InstallTaskCmd : Command
     {
-        public InstallTaskCmd() : base("install-task")
+        public new const string Name = "install-task";
+
+        public InstallTaskCmd() : base(Name)
         {
             Handler = CommandHandler.Create(Run);
         }
         
         private static void Run()
         {
-            TaskHelper.InstallTask(Application.ExecutablePath, "run-clash");
+            TaskHelper.InstallTask(Application.ExecutablePath, RunClashCmd.Name);
         }
     }
 }

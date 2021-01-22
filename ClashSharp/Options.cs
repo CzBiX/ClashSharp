@@ -1,22 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.CommandLine;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.CommandLine;
+using ClashSharp.Core;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ClashSharp
 {
     static class Options
     {
-        public static readonly Option<string?> WorkingDirectory = new(new string[]{ "-d", "--cd" }, "Change working directory");
+        public static readonly Option<string?> WorkingDirectory = new(new[]{ "--cd" }, "Change working directory");
 
         public static void AddAppOptions(this IServiceCollection services)
         {
-            services.AddOptions<FileLoggerProvider.FileLoggerOptions>()
+            services.AddOptions<FileLoggerOptions>()
                 .BindConfiguration("FileLogger");
-            services.AddOptions<Clash.ClashOptions>()
+            services.AddOptions<ClashOptions>()
                 .BindConfiguration("Clash");
         }
     }
