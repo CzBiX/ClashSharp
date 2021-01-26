@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -8,7 +9,7 @@ using ClashSharp.Cmd;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Win32.TaskScheduler;
-using Task = System.Threading.Tasks.Task;
+using Task = Microsoft.Win32.TaskScheduler.Task;
 
 namespace ClashSharp.Core
 {
@@ -18,7 +19,7 @@ namespace ClashSharp.Core
         private readonly Lazy<ClashApi> api;
 
         private Process? process;
-        private Microsoft.Win32.TaskScheduler.Task? task;
+        private Task? task;
         private CancellationTokenSource? taskWatcherToken;
 
         private readonly ClashOptions _options;
@@ -35,10 +36,15 @@ namespace ClashSharp.Core
             _options = options.Value;
         }
 
-        private string BuildArguments()
+        private string[] BuildArguments()
         {
-            return $"-d {_options.HomePath}";
+            return new []{
+                "-d", _options.HomePath,
+                "-f", ConfigPath,
+            };
         }
+
+        public string ConfigPath => Path.GetFullPath(Path.Join(_options.HomePath, "clash-sharp.yml"));
 
         private void StartTask()
         {
@@ -56,7 +62,7 @@ namespace ClashSharp.Core
             t.Run();
 
             taskWatcherToken = new CancellationTokenSource();
-            Task.Run(async () =>
+            System.Threading.Tasks.Task.Run(async () =>
             {
                 while (!taskWatcherToken.IsCancellationRequested)
                 {
@@ -65,7 +71,7 @@ namespace ClashSharp.Core
                         Exited?.Invoke(null, new EventArgs());
                         return;
                     }
-                    await Task.Delay(3000);
+                    await System.Threading.Tasks.Task.Delay(3000);
                 }
             }, taskWatcherToken.Token);
 
@@ -76,10 +82,14 @@ namespace ClashSharp.Core
 
         private void StartProcess()
         {
-            var info = new ProcessStartInfo(_options.ExePath, BuildArguments())
+            var info = new ProcessStartInfo(_options.ExePath)
             {
                 CreateNoWindow = !_options.ShowConsole,
             };
+            foreach (var arg in BuildArguments())
+            {
+                info.ArgumentList.Add(arg);
+            }
 
             var p = new Process()
             {
@@ -124,7 +134,7 @@ namespace ClashSharp.Core
         {
             try
             {
-                await api.Value.ReloadConfig();
+                await api.Value.ReloadConfig(ConfigPath);
             }
             catch (Exception e)
             {

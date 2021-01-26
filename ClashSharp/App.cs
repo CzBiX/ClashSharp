@@ -108,7 +108,13 @@ namespace ClashSharp
 
         private async void OnReloadClick(object? sender, EventArgs e)
         {
-            await ReloadConfig();
+            var success = await ReloadConfig();
+            if (success)
+            {
+                return;
+            }
+
+            MessageBox.Show("Reload config failed.");
         }
 
         private void OnExitClick(object? sender, EventArgs e)

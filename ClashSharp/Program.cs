@@ -72,7 +72,7 @@ namespace ClashSharp
 
                 services.AddAppOptions();
 
-                services.AddScoped<ClashApi>();
+                services.AddSingleton<ClashApi>();
                 services.AddSingleton<Clash>();
                 services.AddSingleton<App>();
             });
