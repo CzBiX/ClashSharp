@@ -14,6 +14,8 @@ namespace ClashSharp
                 .BindConfiguration("FileLogger");
             services.AddOptions<ClashOptions>()
                 .BindConfiguration("Clash");
+            services.AddOptions<SubscriptionOptions>()
+                .BindConfiguration("Subscription");
         }
     }
 }

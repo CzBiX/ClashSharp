@@ -34,17 +34,30 @@ namespace ClashSharp
         [STAThread]
         public static int Main(string[] args)
         {
+            var isMainCmd = false;
+
             var cmd = BuildCommand();
             cmd.UseDefaults();
             cmd.UseMiddleware(invocation =>
             {
-                var dir = invocation.ParseResult.ValueForOption(Options.WorkingDirectory);
+                ParseResult result = invocation.ParseResult;
+                var dir = result.ValueForOption(Options.WorkingDirectory);
                 if (dir != null)
                 {
                     Directory.SetCurrentDirectory(dir);
                 }
+
+                isMainCmd = result.CommandResult.Command is MainCmd;
             });
-            cmd.UseHost(BuildHost);
+            cmd.UseHost(BuildHost, builder =>
+            {
+                if (!isMainCmd)
+                {
+                    return;
+                }
+
+                builder.ConfigureServices(services => services.AddHostedService<SubscriptionManager>());
+            });
 
             return cmd.Build().Invoke(args);
         }
