@@ -8,11 +8,12 @@ namespace ClashSharp.Core
 {
     class ClashApi
     {
+        public const string BaseAddr = "127.0.0.1:9090";
         private readonly HttpClient client = new();
 
         public ClashApi()
         {
-            client.BaseAddress = new Uri("http://127.0.0.1:9090");
+            client.BaseAddress = new Uri("http://" + BaseAddr);
         }
 
         public async Task ReloadConfig(string path)

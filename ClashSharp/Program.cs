@@ -34,8 +34,6 @@ namespace ClashSharp
         [STAThread]
         public static int Main(string[] args)
         {
-            var isMainCmd = false;
-
             var cmd = BuildCommand();
             cmd.UseDefaults();
             cmd.UseMiddleware(invocation =>
@@ -46,18 +44,8 @@ namespace ClashSharp
                 {
                     Directory.SetCurrentDirectory(dir);
                 }
-
-                isMainCmd = result.CommandResult.Command is MainCmd;
             });
-            cmd.UseHost(BuildHost, builder =>
-            {
-                if (!isMainCmd)
-                {
-                    return;
-                }
-
-                builder.ConfigureServices(services => services.AddHostedService<SubscriptionManager>());
-            });
+            cmd.UseHost(BuildHost);
 
             return cmd.Build().Invoke(args);
         }
@@ -72,8 +60,10 @@ namespace ClashSharp
 
                 services.AddAppOptions();
 
-                services.AddSingleton<ClashApi>();
                 services.AddSingleton<Clash>();
+                services.AddSingleton<ClashApi>();
+                services.AddSingleton<ConfigManager>();
+                services.AddSingleton<SubscriptionManager>();
                 services.AddSingleton<App>();
             });
 

@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -9,6 +9,7 @@ using ClashSharp.Cmd;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Win32.TaskScheduler;
+using Action = System.Action;
 using Task = Microsoft.Win32.TaskScheduler.Task;
 
 namespace ClashSharp.Core
@@ -23,28 +24,36 @@ namespace ClashSharp.Core
         private CancellationTokenSource? taskWatcherToken;
 
         private readonly ClashOptions _options;
+        private readonly ConfigManager _configManager;
 
-        public event EventHandler? Exited;
+        public event Action? Exited;
 
-        public class TaskMissingException : Exception { }
+        public class TaskMissingException : Exception
+        {
+        }
 
-        public Clash(ILogger<Clash> logger, Lazy<ClashApi> api, IOptions<ClashOptions> options)
+        public Clash(
+            ILogger<Clash> logger,
+            Lazy<ClashApi> api,
+            IOptions<ClashOptions> options,
+            ConfigManager configManager)
         {
             this.logger = logger;
             this.api = api;
 
             _options = options.Value;
+            _configManager = configManager;
         }
 
-        private string[] BuildArguments()
+        private IEnumerable<string> BuildArguments()
         {
-            return new []{
+            return new[]
+            {
                 "-d", _options.HomePath,
-                "-f", ConfigPath,
+                "-f", _configManager.ConfigPath,
+                "-ext-ctl", ClashApi.BaseAddr,
             };
         }
-
-        public string ConfigPath => Path.GetFullPath(Path.Join(_options.HomePath, "clash-sharp.yml"));
 
         private void StartTask()
         {
@@ -68,9 +77,10 @@ namespace ClashSharp.Core
                 {
                     if (t.State != TaskState.Running)
                     {
-                        Exited?.Invoke(null, new EventArgs());
+                        Exited?.Invoke();
                         return;
                     }
+
                     await System.Threading.Tasks.Task.Delay(3000);
                 }
             }, taskWatcherToken.Token);
@@ -78,7 +88,7 @@ namespace ClashSharp.Core
             task = t;
         }
 
-        public bool NeedAdmin => _options.EnableTun;
+        private bool NeedAdmin => _options.EnableTun;
 
         private void StartProcess()
         {
@@ -104,6 +114,13 @@ namespace ClashSharp.Core
 
         public void Start(bool forceProcessMode = false)
         {
+            if (!_configManager.ConfigReadyEvent.IsSet)
+            {
+                logger.LogInformation("Waiting for config.");
+                _configManager.ConfigReadyEvent.Wait();
+            }
+
+            logger.LogInformation("Start clash.");
             if (NeedAdmin && !forceProcessMode)
             {
                 StartTask();
@@ -112,6 +129,8 @@ namespace ClashSharp.Core
             {
                 StartProcess();
             }
+
+            _configManager.Updated += async () => await ReloadConfig();
         }
 
         public void Stop()
@@ -134,7 +153,7 @@ namespace ClashSharp.Core
         {
             try
             {
-                await api.Value.ReloadConfig(ConfigPath);
+                await api.Value.ReloadConfig(_configManager.ConfigPath);
             }
             catch (Exception e)
             {
@@ -151,7 +170,7 @@ namespace ClashSharp.Core
 
             Stop();
 
-            Exited?.Invoke(sender, e);
+            Exited?.Invoke();
         }
 
         public void WaitForExit()

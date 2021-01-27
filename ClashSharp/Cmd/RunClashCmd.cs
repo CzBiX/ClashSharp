@@ -22,7 +22,7 @@ namespace ClashSharp.Cmd
             var clash = host.Services.GetRequiredService<Clash>();
             var form = new HideForm();
             Application.ThreadExit += (_, _) => clash.Stop();
-            clash.Exited += (_, _) => form.Close();
+            clash.Exited += () => form.Close();
 
             clash.Start(true);
 

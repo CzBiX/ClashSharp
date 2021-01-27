@@ -90,7 +90,7 @@ namespace ClashSharp
             }
         }
 
-        private void Clash_Exited(object? sender, EventArgs e)
+        private void Clash_Exited()
         {
             MessageBox.Show("Clash exited.");
 
