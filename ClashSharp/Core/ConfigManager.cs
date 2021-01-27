@@ -90,10 +90,13 @@ tun:
                 return;
             }
 
-            var content = File.ReadAllText(sourcePath);
+            var content = File.ReadAllLines(sourcePath);
 
             using var writer = new StreamWriter(ConfigPath);
-            writer.Write(content);
+            foreach (var line in content)
+            {
+                writer.WriteLine(line);
+            }
 
             if (_options.EnableTun)
             {
