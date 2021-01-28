@@ -35,7 +35,6 @@ namespace ClashSharp
         public static int Main(string[] args)
         {
             var cmd = BuildCommand();
-            cmd.UseDefaults();
             cmd.UseMiddleware(invocation =>
             {
                 ParseResult result = invocation.ParseResult;

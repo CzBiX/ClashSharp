@@ -30,6 +30,8 @@ tun:
         private readonly Lazy<IFileProvider> _fileProvider;
         private IDisposable? _fileWatcher;
 
+        private bool _updateTaskStarted;
+
         public event Action? Updated;
         public readonly ManualResetEventSlim ConfigReadyEvent;
 
@@ -44,15 +46,19 @@ tun:
             _subscriptionManager = subscriptionManager;
             _fileProvider = new Lazy<IFileProvider>(() => new PhysicalFileProvider(Directory.GetCurrentDirectory()));
             ConfigReadyEvent = new ManualResetEventSlim();
-
-            Task.Run(() => _subscriptionManager.UpdateSubscription(CancellationToken.None));
-            UpdateConfig();
         }
 
-        private void UpdateConfig()
+        public void UpdateConfig()
         {
-            string sourcePath;
+            if (_updateTaskStarted)
+            {
+                return;
+            }
 
+            _updateTaskStarted = true;
+            Task.Run(() => _subscriptionManager.UpdateSubscription(CancellationToken.None));
+
+            string sourcePath;
             if (_subscriptionManager.HasSubscription)
             {
                 _logger.LogInformation("Use subscription config.");

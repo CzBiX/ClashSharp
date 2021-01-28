@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ClashSharp.Core;
@@ -15,7 +16,11 @@ namespace ClashSharp
         private readonly NotifyIcon notifyIcon;
         private readonly Clash clash;
 
-        public App(ILogger<App> logger, Clash clash)
+        public App(
+            ILogger<App> logger,
+            Clash clash,
+            ConfigManager configManager
+            )
         {
             this.logger = logger;
             this.clash = clash;
@@ -24,6 +29,7 @@ namespace ClashSharp
 
             logger.LogInformation("App started.");
 
+            Task.Run(configManager.UpdateConfig);
             Task.Run(StartClash);
         }
 

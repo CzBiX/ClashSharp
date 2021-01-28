@@ -41,9 +41,9 @@ namespace ClashSharp.Core
 
         public bool HasSubscription => _url != null;
 
-        public async Task UpdateSubscription(CancellationToken stoppingToken)
+        public async void UpdateSubscription(CancellationToken stoppingToken)
         {
-            if (_url == null)
+            if (!HasSubscription)
             {
                 return;
             }
