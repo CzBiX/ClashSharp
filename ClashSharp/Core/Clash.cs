@@ -64,13 +64,16 @@ namespace ClashSharp.Core
                 throw new ServiceMissingException();
             }
 
-            if (sc.Status != ServiceControllerStatus.Stopped)
+            if (sc.Status != ServiceControllerStatus.Running)
             {
-                throw new Exception("Invalid service status.");
-            }
+                if (sc.Status != ServiceControllerStatus.Stopped)
+                {
+                    throw new Exception("Invalid service status.");
+                }
 
-            sc.Start();
-            sc.WaitForStatus(ServiceControllerStatus.Running);
+                sc.Start();
+                sc.WaitForStatus(ServiceControllerStatus.Running);
+            }
 
             _serviceWatcherToken = new CancellationTokenSource();
             Task.Run(async () =>
