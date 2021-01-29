@@ -19,7 +19,11 @@ namespace ClashSharp.Cmd
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            var app = host.Services.GetRequiredService<App>();
+            var serviceProvider = host.Services;
+            var app = serviceProvider.GetRequiredService<App>();
+            var applicationLifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
+
+            applicationLifetime.ApplicationStopping.Register(() => app.ExitApp());
 
             Application.Run(app);
         }

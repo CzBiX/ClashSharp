@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -45,7 +46,11 @@ namespace ClashSharp
             var itemWeb = new ToolStripMenuItem("Dashboard");
             itemWeb.Font = new Font(itemWeb.Font, FontStyle.Bold);
             itemWeb.Click += OnWebClick;
-            var itemReload = new ToolStripMenuItem("Reload");
+            var itemReload = new ToolStripMenuItem("Reload")
+            {
+                // We already support automatic reload config
+                Visible = false,
+            };
             itemReload.Click += OnReloadClick;
             var itemExit = new ToolStripMenuItem("Exit");
             itemExit.Click += OnExitClick;
@@ -138,7 +143,7 @@ namespace ClashSharp
             return clash.ReloadConfig();
         }
 
-        private void ExitApp()
+        public void ExitApp()
         {
             logger.LogInformation("Exit App.");
 
@@ -151,6 +156,7 @@ namespace ClashSharp
         }
     }
 
+    [SuppressMessage("ReSharper", "UnusedAutoPropertyAccessor.Global")]
     record AppOptions
     {
         public string DashboardUrl { get; set; } = "https://yacd.haishan.me/";

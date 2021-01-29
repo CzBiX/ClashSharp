@@ -20,6 +20,8 @@ namespace ClashSharp
                     options.Name = WindowsServiceHelpers.IsWindowsService() ? name + "-service" : name;
                 });
 
+            services.AddOptions<AppOptions>()
+                .BindConfiguration("App");
             services.AddOptions<ClashOptions>()
                 .BindConfiguration("Clash");
             services.AddOptions<SubscriptionOptions>()

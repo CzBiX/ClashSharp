@@ -56,12 +56,13 @@ tun:
             }
 
             _updateTaskStarted = true;
-            Task.Run(() => _subscriptionManager.UpdateSubscription(CancellationToken.None));
 
             string sourcePath;
             if (_subscriptionManager.HasSubscription)
             {
                 _logger.LogInformation("Use subscription config.");
+                Task.Run(() => _subscriptionManager.UpdateSubscription(CancellationToken.None));
+
                 sourcePath = _subscriptionManager.SubscriptionPath;
                 _subscriptionManager.Updated += () => UpdateConfig(sourcePath);
             }
