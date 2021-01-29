@@ -18,54 +18,74 @@ namespace ClashSharp
 
         private readonly NotifyIcon notifyIcon;
         private readonly Clash clash;
+        private readonly ClashApi _api;
         private readonly AppOptions _options;
 
         public App(
             ILogger<App> logger,
             Clash clash,
+            ClashApi clashApi,
             ConfigManager configManager,
             IOptions<AppOptions> options
-            )
+        )
         {
             this.logger = logger;
             this.clash = clash;
+            _api = clashApi;
             _options = options.Value;
 
             notifyIcon = BuildNotifyIcon();
 
             logger.LogInformation("App started.");
 
+            if (_options.UiDevMode)
+            {
+                return;
+            }
+
             Task.Run(configManager.UpdateConfig);
             Task.Run(StartClash);
         }
 
-        private NotifyIcon BuildNotifyIcon()
+        private ContextMenuStrip BuildContextMenu()
         {
             var menu = new ContextMenuStrip();
 
             var itemWeb = new ToolStripMenuItem("Dashboard");
             itemWeb.Font = new Font(itemWeb.Font, FontStyle.Bold);
             itemWeb.Click += OnWebClick;
+
             var itemReload = new ToolStripMenuItem("Reload")
             {
                 // We already support automatic reload config
                 Visible = false,
             };
             itemReload.Click += OnReloadClick;
+
+            var itemAbout = new ToolStripMenuItem("About");
+            itemAbout.Click += OnAboutClick;
+
             var itemExit = new ToolStripMenuItem("Exit");
             itemExit.Click += OnExitClick;
 
-            menu.Items.AddRange(new ToolStripItem[] {
+            menu.Items.AddRange(new ToolStripItem[]
+            {
                 itemWeb,
-                itemReload,
+                new ToolStripSeparator(),
+                itemAbout,
                 itemExit,
             });
 
+            return menu;
+        }
+
+        private NotifyIcon BuildNotifyIcon()
+        {
             var icon = new NotifyIcon()
             {
                 Icon = Shell32.GetShell32Icon(iconIndex: AppIconIndex),
                 Text = "ClashSharp",
-                ContextMenuStrip = menu,
+                ContextMenuStrip = BuildContextMenu(),
                 Visible = true,
             };
 
@@ -138,6 +158,19 @@ namespace ClashSharp
             ExitApp();
         }
 
+        private async void OnAboutClick(object? sender, EventArgs e)
+        {
+            var appVersion = Application.ProductVersion!;
+            var versionInfo = await _api.GetVersion();
+            var msg = $"ClashSharp version: {appVersion}\nClash version: {versionInfo.Version}";
+            if (versionInfo.Premium)
+            {
+                msg += " (Premium)";
+            }
+
+            MessageBox.Show(msg, "About", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
         private Task<bool> ReloadConfig()
         {
             return clash.ReloadConfig();
@@ -160,5 +193,6 @@ namespace ClashSharp
     record AppOptions
     {
         public string DashboardUrl { get; set; } = "https://yacd.haishan.me/";
+        public bool UiDevMode { get; set; }
     }
 }
