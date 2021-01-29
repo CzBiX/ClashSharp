@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Drawing;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ClashSharp.Core;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ClashSharp
 {
@@ -15,15 +15,18 @@ namespace ClashSharp
 
         private readonly NotifyIcon notifyIcon;
         private readonly Clash clash;
+        private readonly AppOptions _options;
 
         public App(
             ILogger<App> logger,
             Clash clash,
-            ConfigManager configManager
+            ConfigManager configManager,
+            IOptions<AppOptions> options
             )
         {
             this.logger = logger;
             this.clash = clash;
+            _options = options.Value;
 
             notifyIcon = BuildNotifyIcon();
 
@@ -37,7 +40,7 @@ namespace ClashSharp
         {
             var menu = new ContextMenuStrip();
 
-            var itemWeb = new ToolStripMenuItem("Web");
+            var itemWeb = new ToolStripMenuItem("Dashboard");
             itemWeb.Font = new Font(itemWeb.Font, FontStyle.Bold);
             itemWeb.Click += OnWebClick;
             var itemReload = new ToolStripMenuItem("Reload");
@@ -105,7 +108,7 @@ namespace ClashSharp
 
         private void OnWebClick(object? sender, EventArgs e)
         {
-            var info = new ProcessStartInfo("https://yacd.haishan.me/")
+            var info = new ProcessStartInfo(_options.DashboardUrl)
             {
                 UseShellExecute = true,
             };
@@ -144,5 +147,10 @@ namespace ClashSharp
 
             ExitThread();
         }
+    }
+
+    record AppOptions
+    {
+        public string DashboardUrl { get; set; } = "https://yacd.haishan.me/";
     }
 }
