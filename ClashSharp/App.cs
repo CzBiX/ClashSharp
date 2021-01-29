@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ClashSharp.Core;
+using ClashSharp.Native;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -11,6 +12,7 @@ namespace ClashSharp
 {
     class App : ApplicationContext
     {
+        private const int AppIconIndex = 135;
         private readonly ILogger<App> logger;
 
         private readonly NotifyIcon notifyIcon;
@@ -56,7 +58,7 @@ namespace ClashSharp
 
             var icon = new NotifyIcon()
             {
-                Icon = SystemIcons.Application,
+                Icon = Shell32.GetShell32Icon(iconIndex: AppIconIndex),
                 Text = "ClashSharp",
                 ContextMenuStrip = menu,
                 Visible = true,

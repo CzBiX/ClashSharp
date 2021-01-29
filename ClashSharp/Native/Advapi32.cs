@@ -6,11 +6,13 @@ namespace ClashSharp.Native
 {
     class ServiceMethods
     {
-        [DllImport("advapi32.dll", EntryPoint = "OpenSCManagerW", ExactSpelling = true, CharSet = CharSet.Unicode,
+        public const string DllName = "advapi32.dll";
+
+        [DllImport(DllName, EntryPoint = "OpenSCManagerW", ExactSpelling = true, CharSet = CharSet.Unicode,
             SetLastError = true)]
         public static extern IntPtr OpenSCManager(string? machineName, string? databaseName, ScmAccess dwAccess);
 
-        [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport(DllName, SetLastError = true, CharSet = CharSet.Auto)]
         public static extern IntPtr CreateService(
             IntPtr hScManager,
             string lpServiceName,
@@ -26,21 +28,21 @@ namespace ClashSharp.Native
             string? lpServiceStartName,
             string? lpPassword);
 
-        [DllImport("advapi32.dll", EntryPoint = "OpenServiceW", ExactSpelling = true, CharSet = CharSet.Unicode,
+        [DllImport(DllName, EntryPoint = "OpenServiceW", ExactSpelling = true, CharSet = CharSet.Unicode,
             SetLastError = true)]
         public static extern IntPtr OpenService(SafeHandle handle, string serviceName, ServiceAccess access);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
+        [DllImport(DllName, SetLastError = true)]
         public static extern bool DeleteService(SafeHandle handle);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
+        [DllImport(DllName, SetLastError = true)]
         public static extern bool QueryServiceObjectSecurity(SafeHandle serviceHandle, SecurityInfos secInfo,
             byte[]? secDesc, uint bufSize, out uint bufSizeNeeded);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
+        [DllImport(DllName, SetLastError = true)]
         public static extern bool SetServiceObjectSecurity(SafeHandle serviceHandle, SecurityInfos secInfo, byte[] secDesc);
 
-        [DllImport("advapi32.dll", SetLastError = true)]
+        [DllImport(DllName, SetLastError = true)]
         public static extern bool CloseServiceHandle(IntPtr handle);
 
         [Flags]
