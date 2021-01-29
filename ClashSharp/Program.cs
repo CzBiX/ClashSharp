@@ -8,6 +8,7 @@ using ClashSharp.Cmd;
 using ClashSharp.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Logging;
 
 namespace ClashSharp
@@ -18,7 +19,8 @@ namespace ClashSharp
         {
             RootCommand rootCommand = new MainCmd()
             {
-                new InstallTaskCmd(),
+                new InstallServiceCmd(),
+                new UninstallServiceCmd(),
                 new RunClashCmd(),
             };
 
@@ -35,6 +37,7 @@ namespace ClashSharp
         public static int Main(string[] args)
         {
             var cmd = BuildCommand();
+            cmd.UseDefaults();
             cmd.UseMiddleware(invocation =>
             {
                 ParseResult result = invocation.ParseResult;
@@ -44,7 +47,14 @@ namespace ClashSharp
                     Directory.SetCurrentDirectory(dir);
                 }
             });
-            cmd.UseHost(BuildHost);
+            cmd.UseHost(BuildHost,
+                builder =>
+                {
+                    if (WindowsServiceHelpers.IsWindowsService())
+                    {
+                        builder.UseWindowsService(options => options.ServiceName = Clash.ServiceName);
+                    }
+                });
 
             return cmd.Build().Invoke(args);
         }
@@ -71,7 +81,9 @@ namespace ClashSharp
 
         private class Lazier<T> : Lazy<T> where T : class
         {
-            public Lazier(IServiceProvider provider) : base(provider.GetRequiredService<T>) {}
+            public Lazier(IServiceProvider provider) : base(provider.GetRequiredService<T>)
+            {
+            }
         }
     }
 }

@@ -1,8 +1,6 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.Windows.Forms;
 using ClashSharp.Core;
-using ClashSharp.UI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -16,18 +14,17 @@ namespace ClashSharp.Cmd
         {
             Handler = CommandHandler.Create<IHost>(Run);
         }
-        
+
         private static void Run(IHost host)
         {
-            var clash = host.Services.GetRequiredService<Clash>();
-            var form = new HideForm();
-            Application.ThreadExit += (_, _) => clash.Stop();
-            clash.Exited += () => form.Close();
+            var serviceProvider = host.Services;
+            var clash = serviceProvider.GetRequiredService<Clash>();
+            var applicationLifetime = serviceProvider.GetRequiredService<IHostApplicationLifetime>();
+
+            applicationLifetime.ApplicationStopping.Register(() => clash.Stop());
 
             clash.Start(true);
-
-            // HACK: for receive Exit event
-            Application.Run(form);
+            clash.WaitForExit();
         }
     }
 }

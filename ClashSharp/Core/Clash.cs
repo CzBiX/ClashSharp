@@ -2,33 +2,34 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.ServiceProcess;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ClashSharp.Cmd;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Win32.TaskScheduler;
-using Action = System.Action;
-using Task = Microsoft.Win32.TaskScheduler.Task;
 
 namespace ClashSharp.Core
 {
     class Clash
     {
+        public const string ServiceName = "ClashSharpService";
+
         private readonly ILogger<Clash> logger;
         private readonly Lazy<ClashApi> api;
 
         private Process? process;
-        private Task? task;
-        private CancellationTokenSource? taskWatcherToken;
+        private ServiceController? _sc;
+        private CancellationTokenSource? _serviceWatcherToken;
 
         private readonly ClashOptions _options;
         private readonly ConfigManager _configManager;
 
         public event Action? Exited;
 
-        public class TaskMissingException : Exception
+        public class ServiceMissingException : Exception
         {
         }
 
@@ -55,37 +56,39 @@ namespace ClashSharp.Core
             };
         }
 
-        private void StartTask()
+        private void StartService()
         {
-            var t = TaskHelper.GetTask();
-            if (t == null)
+            var sc = new ServiceController(ServiceName);
+            if (sc == null)
             {
-                throw new TaskMissingException();
+                throw new ServiceMissingException();
             }
 
-            if (t.State != TaskState.Ready)
+            if (sc.Status != ServiceControllerStatus.Stopped)
             {
-                throw new Exception("Invalid task status.");
+                throw new Exception("Invalid service status.");
             }
 
-            t.Run();
+            sc.Start();
+            sc.WaitForStatus(ServiceControllerStatus.Running);
 
-            taskWatcherToken = new CancellationTokenSource();
-            System.Threading.Tasks.Task.Run(async () =>
+            _serviceWatcherToken = new CancellationTokenSource();
+            Task.Run(async () =>
             {
-                while (!taskWatcherToken.IsCancellationRequested)
+                while (!_serviceWatcherToken.IsCancellationRequested)
                 {
-                    if (t.State != TaskState.Running)
+                    sc.Refresh();
+                    if (sc.Status != ServiceControllerStatus.Running)
                     {
                         Exited?.Invoke();
                         return;
                     }
 
-                    await System.Threading.Tasks.Task.Delay(3000);
+                    await Task.Delay(3000, _serviceWatcherToken.Token);
                 }
-            }, taskWatcherToken.Token);
+            }, _serviceWatcherToken.Token);
 
-            task = t;
+            _sc = sc;
         }
 
         private bool NeedAdmin => _options.EnableTun;
@@ -114,7 +117,7 @@ namespace ClashSharp.Core
 
         public void Start(bool forceProcessMode = false)
         {
-            if (!_configManager.ConfigReadyEvent.IsSet)
+            if (!forceProcessMode && !_configManager.ConfigReadyEvent.IsSet)
             {
                 logger.LogInformation("Waiting for config.");
                 _configManager.ConfigReadyEvent.Wait();
@@ -123,7 +126,7 @@ namespace ClashSharp.Core
             logger.LogInformation("Start clash.");
             if (NeedAdmin && !forceProcessMode)
             {
-                StartTask();
+                StartService();
             }
             else
             {
@@ -141,11 +144,11 @@ namespace ClashSharp.Core
                 process.Close();
                 process = null;
             }
-            else if (task != null)
+            else if (_sc != null)
             {
-                taskWatcherToken!.Cancel();
-                task.Stop();
-                task = null;
+                _serviceWatcherToken!.Cancel();
+                _sc.Stop();
+                _sc = null;
             }
         }
 
@@ -178,9 +181,9 @@ namespace ClashSharp.Core
             process?.WaitForExit();
         }
 
-        public static void InstallClashTask()
+        public static void InstallClashService()
         {
-            var info = new ProcessStartInfo(Application.ExecutablePath, InstallTaskCmd.Name)
+            var info = new ProcessStartInfo(Application.ExecutablePath, InstallServiceCmd.Name)
             {
                 Verb = "runas",
                 UseShellExecute = true,

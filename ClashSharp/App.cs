@@ -72,16 +72,16 @@ namespace ClashSharp
                 clash.Start();
                 clash.Exited += Clash_Exited;
             }
-            catch (Clash.TaskMissingException e)
+            catch (Clash.ServiceMissingException e)
             {
-                logger.LogInformation(e, "Clash task not installed.");
+                logger.LogInformation(e, "Clash service not installed.");
                 try
                 {
-                    Clash.InstallClashTask();
+                    Clash.InstallClashService();
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Install Clash task failed.");
+                    logger.LogError(ex, "Install Clash service failed.");
                     ExitApp();
                     return;
                 }
