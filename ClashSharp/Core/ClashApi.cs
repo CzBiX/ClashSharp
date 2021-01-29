@@ -12,10 +12,7 @@ namespace ClashSharp.Core
         public const string BaseAddr = "127.0.0.1:9090";
         private readonly HttpClient client = new();
 
-        private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
-        {
-            IncludeFields = true,
-        };
+        private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
         public ClashApi()
         {
@@ -35,8 +32,8 @@ namespace ClashSharp.Core
 
         public record VersionInfo
         {
-            public string Version;
-            public bool Premium;
+            public string Version { get; set; } = default!;
+            public bool Premium { get; set; } = default;
         }
 
         public async Task<VersionInfo> GetVersion()

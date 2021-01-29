@@ -47,14 +47,7 @@ namespace ClashSharp
                 }
             });
             cmd.UseDefaults();
-            cmd.UseHost(BuildHost,
-                builder =>
-                {
-                    if (WindowsServiceHelpers.IsWindowsService())
-                    {
-                        builder.UseWindowsService(options => options.ServiceName = Clash.ServiceName);
-                    }
-                });
+            cmd.UseHost(BuildHost);
 
             return cmd.Build().Invoke(args);
         }
@@ -62,21 +55,24 @@ namespace ClashSharp
         private static IHostBuilder BuildHost(string[] args)
         {
             var builder = Host.CreateDefaultBuilder(args);
-            builder.ConfigureServices(services =>
-            {
-                services.AddTransient(typeof(Lazy<>), typeof(Lazier<>));
-                services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
-
-                services.AddAppOptions();
-
-                services.AddSingleton<Clash>();
-                services.AddSingleton<ClashApi>();
-                services.AddSingleton<ConfigManager>();
-                services.AddSingleton<SubscriptionManager>();
-                services.AddSingleton<App>();
-            });
+            builder.ConfigureServices(ConfigureAppServices);
+            builder.UseWindowsService(options => options.ServiceName = Clash.ServiceName);
 
             return builder;
+        }
+
+        private static void ConfigureAppServices(IServiceCollection services)
+        {
+            services.AddTransient(typeof(Lazy<>), typeof(Lazier<>));
+            services.AddSingleton<ILoggerProvider, FileLoggerProvider>();
+
+            services.AddAppOptions();
+
+            services.AddSingleton<Clash>();
+            services.AddSingleton<ClashApi>();
+            services.AddSingleton<ConfigManager>();
+            services.AddSingleton<SubscriptionManager>();
+            services.AddSingleton<App>();
         }
 
         private class Lazier<T> : Lazy<T> where T : class

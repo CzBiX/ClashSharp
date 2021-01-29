@@ -71,7 +71,11 @@ namespace ClashSharp.Core
                 }
 
                 sc.Start();
-                sc.WaitForStatus(ServiceControllerStatus.Running);
+                sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(3));
+                if (sc.Status != ServiceControllerStatus.Running)
+                {
+                    throw new Exception("Clash service start failed.");
+                }
             }
 
             _serviceWatcherToken = new CancellationTokenSource();
