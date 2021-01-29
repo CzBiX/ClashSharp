@@ -1,9 +1,6 @@
 ﻿using System;
-using System.CommandLine.Parsing;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using ClashSharp.Cmd;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -12,44 +9,42 @@ namespace ClashSharp
     [ProviderAlias("File")]
     class FileLoggerProvider : ILoggerProvider
     {
-        public readonly string FilePath;
         private readonly Lazy<StreamWriter> file;
+        private readonly FileLoggerOptions _options;
 
         public FileLoggerProvider(
-            IOptions<FileLoggerOptions> options,
-            IHostEnvironment environment,
-            ParseResult parseResult
-            )
+            IOptions<FileLoggerOptions> options
+        )
         {
-            var optionsValue = options.Value;
-            var isDaemon = parseResult.CommandResult.Command is RunClashCmd;
-            var appName = environment.ApplicationName ?? "app";
-            var fileName = (isDaemon ? appName + "-daemon" : appName) + ".log";
-            FilePath = Path.Join(optionsValue.Path, fileName);
+            _options = options.Value;
 
-            file = new Lazy<StreamWriter>(() =>
+            file = new Lazy<StreamWriter>(CreateWriter);
+        }
+
+        private string OldFileName => _options.Name + "-old.log";
+
+        private string FileName => _options.Name + ".log";
+
+        private string FilePath => Path.Join(_options.Path, FileName);
+
+        private StreamWriter CreateWriter()
+        {
+            var logFileInfo = new FileInfo(FilePath);
+            var directoryName = logFileInfo.DirectoryName;
+            if (!Directory.Exists(directoryName))
             {
-                var dirCreated = false;
-                openFile:
-                try
-                {
-                    return new StreamWriter(FilePath, true)
-                    {
-                        AutoFlush = true
-                    };
-                }
-                catch (DirectoryNotFoundException)
-                {
-                    if (dirCreated)
-                    {
-                        throw ;
-                    }
+                Directory.CreateDirectory(directoryName!);
+            }
 
-                    Directory.CreateDirectory(optionsValue.Path);
-                    dirCreated = true;
-                    goto openFile;
-                }
-            });
+            if (logFileInfo.Exists && logFileInfo.Length >= 0x4000000)
+            {
+                logFileInfo.MoveTo(Path.Join(directoryName, OldFileName), true);
+            }
+
+            return new StreamWriter(FilePath, true)
+            {
+                AutoFlush = true
+            };
         }
 
         public ILogger CreateLogger(string categoryName)
@@ -91,7 +86,8 @@ namespace ClashSharp
             return true;
         }
 
-        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception,
+            Func<TState, Exception, string> formatter)
         {
             if (!IsEnabled(logLevel))
             {
@@ -118,5 +114,6 @@ namespace ClashSharp
     record FileLoggerOptions
     {
         public string Path { get; set; } = "logs";
+        public string? Name { get; set; }
     }
 }
