@@ -49,6 +49,7 @@ namespace ClashSharp.Core
             }
 
             _logger.LogInformation("Started.");
+            _logger.LogInformation($"Check interval: {_interval}");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -64,6 +65,8 @@ namespace ClashSharp.Core
                     _logger.LogWarning(e, "Check subscription failed.");
                 }
 
+                var nextCheckTime = DateTime.Now + _interval;
+                _logger.LogInformation($"Next check will be at {nextCheckTime}");
                 await Task.Delay(_interval, stoppingToken);
             }
 
