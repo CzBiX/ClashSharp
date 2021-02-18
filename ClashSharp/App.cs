@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using ClashSharp.Core;
 using ClashSharp.Native;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -26,7 +27,8 @@ namespace ClashSharp
             Clash clash,
             ClashApi clashApi,
             ConfigManager configManager,
-            IOptions<AppOptions> options
+            IOptions<AppOptions> options,
+            IHostEnvironment environment
         )
         {
             this.logger = logger;
@@ -38,7 +40,7 @@ namespace ClashSharp
 
             logger.LogInformation("App started.");
 
-            if (_options.UiDevMode)
+            if (environment.IsDevelopment())
             {
                 return;
             }
@@ -193,6 +195,5 @@ namespace ClashSharp
     record AppOptions
     {
         public string DashboardUrl { get; set; } = "https://yacd.haishan.me/";
-        public bool UiDevMode { get; set; }
     }
 }

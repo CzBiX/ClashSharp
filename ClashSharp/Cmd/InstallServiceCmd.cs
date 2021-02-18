@@ -1,14 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.ComponentModel;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Windows.Forms;
 using ClashSharp.Core;
 using ClashSharp.Native;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using static ClashSharp.Native.ServiceMethods;
 
 namespace ClashSharp.Cmd
@@ -19,7 +23,7 @@ namespace ClashSharp.Cmd
 
         public InstallServiceCmd() : base(Name)
         {
-            Handler = CommandHandler.Create(Run);
+            Handler = CommandHandler.Create<IHost>(Run);
         }
 
         private static string QuotePath(string s)
@@ -66,23 +70,33 @@ namespace ClashSharp.Cmd
             }
         }
 
-        private static void Run()
+        private static void Run(IHost host)
         {
             const string serviceName = Clash.ServiceName;
+            var isDev = host.Services.GetRequiredService<IHostEnvironment>().IsDevelopment();
 
-            using var manager = OpenSCManager(null, null,
-                    ScmAccess.ScManagerAllAccess)
+            using var manager = OpenSCManager(null, null, ScmAccess.ScManagerAllAccess)
                 .AsSafeHandle(CloseServiceHandle);
             if (manager.IsInvalid)
             {
                 throw new Exception("Open service manager failed", new Win32Exception());
             }
 
-            var cmd = string.Join(' ',
-                QuotePath(Application.ExecutablePath),
-                $@"--cd {QuotePath(Directory.GetCurrentDirectory())}",
-                $"{RunClashCmd.Name}"
-            );
+            var args = new List<string>
+            {
+                QuotePath(Application.ExecutablePath)
+            };
+            if (isDev)
+            {
+#pragma warning disable IL3000
+                args.Add(QuotePath(Assembly.GetEntryAssembly()!.Location));
+#pragma warning restore IL3000
+            }
+
+            args.Add($@"--cd {QuotePath(Directory.GetCurrentDirectory())}");
+            args.Add($"{RunClashCmd.Name}");
+
+            var cmd = string.Join(' ', args);
 
             using var service = CreateService(manager.DangerousGetHandle(), serviceName, "ClashSharp Service",
                     ServiceAccess.ServiceAllAccess,
