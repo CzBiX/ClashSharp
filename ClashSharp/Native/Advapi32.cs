@@ -8,11 +8,10 @@ namespace ClashSharp.Native
     {
         public const string DllName = "advapi32.dll";
 
-        [DllImport(DllName, EntryPoint = "OpenSCManagerW", ExactSpelling = true, CharSet = CharSet.Unicode,
-            SetLastError = true)]
+        [DllImport(DllName, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr OpenSCManager(string? machineName, string? databaseName, ScmAccess dwAccess);
 
-        [DllImport(DllName, SetLastError = true, CharSet = CharSet.Auto)]
+        [DllImport(DllName, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr CreateService(
             IntPtr hScManager,
             string lpServiceName,
@@ -28,8 +27,7 @@ namespace ClashSharp.Native
             string? lpServiceStartName,
             string? lpPassword);
 
-        [DllImport(DllName, EntryPoint = "OpenServiceW", ExactSpelling = true, CharSet = CharSet.Unicode,
-            SetLastError = true)]
+        [DllImport(DllName, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr OpenService(SafeHandle handle, string serviceName, ServiceAccess access);
 
         [DllImport(DllName, SetLastError = true)]

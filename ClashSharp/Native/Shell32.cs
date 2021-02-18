@@ -8,7 +8,7 @@ namespace ClashSharp.Native
     {
         public const string DllName = "shell32.dll";
 
-        [DllImport(DllName, CharSet = CharSet.Unicode, EntryPoint = "ExtractIconW", SetLastError = true)]
+        [DllImport(DllName, CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr ExtractIcon(IntPtr handle, string fileName, uint iconIndex);
 
         [DllImport(DllName, SetLastError = true)]
