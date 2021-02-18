@@ -6,6 +6,7 @@ using System.CommandLine.Parsing;
 using System.IO;
 using ClashSharp.Cmd;
 using ClashSharp.Core;
+using ClashSharp.DI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.WindowsServices;
@@ -47,7 +48,16 @@ namespace ClashSharp
                 }
             });
             cmd.UseDefaults();
-            cmd.UseHost(BuildHost);
+            cmd.UseHost(BuildHost, builder =>
+            {
+                if (WindowsServiceHelpers.IsWindowsService())
+                {
+                    builder.ConfigureServices(services =>
+                    {
+                        services.RemoveService<IHostLifetime, InvocationLifetime>();
+                    });
+                }
+            });
 
             return cmd.Build().Invoke(args);
         }
