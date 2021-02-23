@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using ClashSharp.Core;
 using ClashSharp.Native;
+using ClashSharp.Util;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -36,11 +37,12 @@ namespace ClashSharp
             _api = clashApi;
             _options = options.Value;
 
-            notifyIcon = BuildNotifyIcon();
+            var isDev = environment.IsDevelopment();
+            notifyIcon = BuildNotifyIcon(isDev);
 
             logger.LogInformation("App started.");
 
-            if (environment.IsDevelopment())
+            if (isDev)
             {
                 return;
             }
@@ -49,7 +51,7 @@ namespace ClashSharp
             Task.Run(StartClash);
         }
 
-        private ContextMenuStrip BuildContextMenu()
+        private ContextMenuStrip BuildContextMenu(bool isDev)
         {
             var menu = new ContextMenuStrip();
 
@@ -70,24 +72,45 @@ namespace ClashSharp
             var itemExit = new ToolStripMenuItem("Exit");
             itemExit.Click += OnExitClick;
 
-            menu.Items.AddRange(new ToolStripItem[]
+            var toolStripItems = new ToolStripItem[]
             {
                 itemWeb,
                 new ToolStripSeparator(),
                 itemAbout,
                 itemExit,
-            });
+            };
+
+            menu.Items.Add(itemWeb);
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add(itemAbout);
+
+            if (isDev)
+            {
+                var label = new ToolStripLabel("Dev")
+                {
+                    Enabled = false,
+                };
+                menu.Items.Add(label);
+            }
+
+            menu.Items.Add(itemExit);
 
             return menu;
         }
 
-        private NotifyIcon BuildNotifyIcon()
+        private NotifyIcon BuildNotifyIcon(bool isDev)
         {
+            var title = "ClashSharp";
+            if (isDev)
+            {
+                title += " Dev";
+            }
+
             var icon = new NotifyIcon()
             {
                 Icon = Shell32.GetShell32Icon(iconIndex: AppIconIndex),
-                Text = "ClashSharp",
-                ContextMenuStrip = BuildContextMenu(),
+                Text = title,
+                ContextMenuStrip = BuildContextMenu(isDev),
                 Visible = true,
             };
 
@@ -137,11 +160,7 @@ namespace ClashSharp
 
         private void OnWebClick(object? sender, EventArgs e)
         {
-            var info = new ProcessStartInfo(_options.DashboardUrl)
-            {
-                UseShellExecute = true,
-            };
-            Process.Start(info);
+            BrowserUtils.OpenLinkInAppMode(_options.DashboardUrl);
         }
 
         private async void OnReloadClick(object? sender, EventArgs e)
